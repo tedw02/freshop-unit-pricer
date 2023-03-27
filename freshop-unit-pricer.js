@@ -2,16 +2,25 @@ const largeUnits = {
 "lb": [16, "oz"],
 "gal": [128, "fl oz"],
 "gl": [128, "fl oz"],
-"ltr": [33.814, "fl oz"]
+"gll": [128, "fl oz"],
+"gallon": [128, "fl oz"],
+"ltr": [33.814, "fl oz"],
+"l": [33.814, "fl oz"],
+"lt": [33.814, "fl oz"],
+"Liters": [33.814, "fl oz"]
 };
 
 const contentFields = ['products', 'fp-products', 'offers-by-savings', 'products-recent']
 
+const badUnits = ['ct', 'ea', 'pk', 'case']
+
+const priceRegex = new RegExp(/([\d.]+[\/]?[\d.]?)[ ]?([A-Za-z]+(?: oz)?)$/);
+
 function parseSale(node, priceTag, insertionTag) {
   const finalUnits = priceTag.match(/[\d.]+/g);
-  var finalPrice;
-  var numSales = 1;
-  const [numUnits, unit] = parseUnit(node.getElementsByClassName('fp-item-size')[0].textContent);
+  let finalPrice;
+  let numSales = 1;
+  const [numUnits, unit] = parseUnit(node);
   if (finalUnits.length > 1) {
     numSales = finalUnits[0];
     finalPrice = finalUnits[1];
@@ -23,8 +32,9 @@ function parseSale(node, priceTag, insertionTag) {
 
   finalPrice = finalPrice / numSales;
 
-  if (numUnits > 1) {
-    addPrice(pricePerUnit(finalPrice, numUnits), unit, insertionTag);
+  if (numUnits != 1) {
+    finalPrice = pricePerUnit(finalPrice, numUnits);
+    addPrice(finalPrice, unit, insertionTag);
   }
 
   if (largeUnits[unit]) {
@@ -33,9 +43,35 @@ function parseSale(node, priceTag, insertionTag) {
 }
 
 function parseUnit(unitLabel) {
-  // console.log(unitLabel);
-  const numUnits = unitLabel.replace(/[^\d.]/g, '');
-  const unit = unitLabel.replace(/[\d.]/g, '').trim();
+  //console.log(unitLabel);
+  priceTag = unitLabel.getElementsByClassName('fp-item-size')[0].textContent;
+  // console.log(priceTag);
+  const parseTag = priceTag.match(priceRegex);
+  // console.log(parseTag);
+  let numUnits = 1;
+  let unit;
+
+  if (parseTag) {
+    numUnits = parseTag[1];
+    unit = parseTag[2];
+  } else {
+    unit = priceTag;
+  }
+
+  if (numUnits == 1 && badUnits.includes(unit)) {
+    const parseName = unitLabel.getElementsByClassName('fp-item-name')[0].textContent.trim().match(priceRegex);
+    // console.log(parseName);
+    if (parseName && parseName[0] != 1) {
+      numUnits = parseName[1];
+      unit = parseName[2]
+    }
+  }
+  // console.log(numUnits);
+  if (typeof numUnits == 'string' && numUnits.includes('/')) {
+    numUnits = numUnits.split('/');
+    numUnits = numUnits[0] / numUnits[1];
+  }
+
   return([numUnits, unit]);
 }
 
@@ -62,7 +98,7 @@ const observer = new MutationObserver(function (mutations, mutationInstance) {
     itemsList.forEach(item => {
       // console.log(typeof item);
       // const sale = item.getElementsByClassName('fp-item-sale')[0]
-      // var priceNode = item.getElementsByClassName('fp-item-sale')[0]
+      // let priceNode = item.getElementsByClassName('fp-item-sale')[0]
       if (item.querySelector('.fp-item-sale')) {
         // console.log("item on sale");
         parseSale(item, item.getElementsByTagName('strong')[0].textContent, item.getElementsByClassName('fp-item-sale-date')[0]);
