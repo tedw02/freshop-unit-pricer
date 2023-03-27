@@ -59,7 +59,6 @@ const observer = new MutationObserver(function (mutations, mutationInstance) {
     if (!node?.classList?.contains('fp-container-results')) return;
     const itemsList = node.querySelectorAll('.fp-item-detail');
 
-    var finalPrice;
     itemsList.forEach(item => {
       // console.log(typeof item);
       // const sale = item.getElementsByClassName('fp-item-sale')[0]
