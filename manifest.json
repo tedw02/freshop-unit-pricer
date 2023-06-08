@@ -9,5 +9,10 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "browser_specific_settings": {
+    "gecko": {
+       "id": "{f8342b45-369b-42c2-b625-5a2372322676}"
+     }
+  },
   "permissions": ["activeTab"]
 }
