@@ -10,7 +10,7 @@ const largeUnits = {
 "Liters": [33.814, "fl oz"]
 };
 
-const contentFields = ['products', 'fp-products', 'offers-by-savings', 'products-recent']
+const contentFields = ['products', 'fp-products', 'offers-by-savings', 'products-recent', 'weekly-ad']
 
 const badUnits = ['ct', 'ea', 'pk', 'case']
 
@@ -43,27 +43,36 @@ function parseSale(node, priceTag, insertionTag) {
 }
 
 function parseUnit(unitLabel) {
-  //console.log(unitLabel);
-  priceTag = unitLabel.getElementsByClassName('fp-item-size')[0].textContent;
-  // console.log(priceTag);
-  const parseTag = priceTag.match(priceRegex);
-  // console.log(parseTag);
+  // console.log(unitLabel);
+  extractUnitsFromNameInstead = false;
   let numUnits = 1;
   let unit;
+  try {
+    priceTag = unitLabel.getElementsByClassName('fp-item-size')[0].textContent;
+    // console.log(priceTag);
+    const parseTag = priceTag.match(priceRegex);
+    // console.log(parseTag);
 
-  if (parseTag) {
-    numUnits = parseTag[1];
-    unit = parseTag[2];
-  } else {
-    unit = priceTag;
+    if (parseTag) {
+      numUnits = parseTag[1];
+      unit = parseTag[2];
+    } else {
+      unit = priceTag;
+    }
+    if ((numUnits == 1 && badUnits.includes(unit))) {
+      extractUnitsFromNameInstead = true;
+    }
+  } catch (TypeError) {
+    console.log("Item has no units");
+    extractUnitsFromNameInstead = true;
   }
 
-  if (numUnits == 1 && badUnits.includes(unit)) {
+  if (extractUnitsFromNameInstead) {
     const parseName = unitLabel.getElementsByClassName('fp-item-name')[0].textContent.trim().match(priceRegex);
     // console.log(parseName);
     if (parseName && parseName[0] != 1) {
       numUnits = parseName[1];
-      unit = parseName[2]
+      unit = parseName[2];
     }
   }
   // console.log(numUnits);
@@ -92,7 +101,8 @@ const observer = new MutationObserver(function (mutations, mutationInstance) {
   // console.log(mutations);
   mutations.forEach(mutation => {
     const node = mutation.addedNodes[mutation.addedNodes.length - 1];
-    if (!node?.classList?.contains('fp-container-results')) return;
+    // console.log(node);
+    if (!node?.classList?.contains('container-fluid')) return;
     const itemsList = node.querySelectorAll('.fp-item-detail');
 
     itemsList.forEach(item => {
@@ -114,6 +124,7 @@ if (document.getElementById('freshop-js')) {
   // console.log("detected freshop site");
   contentFields.forEach((contentField) => {
     const content = document.getElementById(contentField);
+    // console.log(content);
     if (content) {
       observer.observe(content, {
         childList: true,
